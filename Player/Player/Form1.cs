@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Player
@@ -16,6 +17,7 @@ namespace Player
         SocketType.Dgram,
         ProtocolType.Udp
         );
+        private Thread thread;
         private List<Players> players = new List<Players>();
         public Form1()
         {
@@ -39,7 +41,7 @@ namespace Player
 
             seq += 1;
         }
-        static void Receive(Socket sock, ref int seq, ref List<Players> players)
+        void Receive(Socket sock, ref int seq, ref List<Players> players)
         {
             byte[] data = new byte[92];
             EndPoint addr = new IPEndPoint(0, 0);
@@ -85,12 +87,25 @@ namespace Player
             }
             Send(sock, ref seq, players[0].X,players[0].Y);
         }
+        public void UpdateData()
+        {
+            while (1 == 1)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    Receive(sock, ref seq, ref players);
+                });
+            }
+            
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
             players.Add(new Players(10, 10, this.Size.Width, this.Size.Height));
 
             players.Add(new Players(100, 100, this.Size.Width, this.Size.Height));
             Send(sock, ref seq, players[0].X, players[0].Y);
+            thread = new Thread(new ThreadStart(UpdateData));
+            thread.Start();
         }
         
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -106,8 +121,12 @@ namespace Player
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            Receive(sock, ref seq, ref players);
             Refresh();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            thread.Join();
         }
     }
 }
