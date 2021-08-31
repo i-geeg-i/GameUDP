@@ -83,13 +83,13 @@ namespace Player
             
             while (1 == 1)
             {
-                
-                Recive(sock,ref seq, ref players);
+             /*   
+                Recive(sock,ref seq, ref players);*/
                 this.Invoke((MethodInvoker)delegate {
                     this.Refresh();
                 });
-
-                //players[0].X += 1;
+             
+                players[0].X += 1;
                 //players[0].X = 500;
                 
                 Thread.Sleep(10);
@@ -117,39 +117,35 @@ namespace Player
             {
                 players[0].Y += 1;
             }
-            Send(sock, ref seq, players[0].X,players[0].Y);
+            //Send(sock, ref seq, players[0].X,players[0].Y);
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            pictureBox.Dock = DockStyle.Fill;
-            pictureBox.BackColor = Color.White;
-            pictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox_Paint);
-            this.Controls.Add(pictureBox);
             players.Add(new Players(10, 10, this.Size.Width, this.Size.Height));
 
             players.Add(new Players(100, 100, this.Size.Width, this.Size.Height));
-            Send(sock, ref seq, players[0].X, players[0].Y);
+           // Send(sock, ref seq, players[0].X, players[0].Y);
             thread = new Thread(new ThreadStart(Time));
             thread.Start();
         }
         
-        private void pictureBox_Paint(object sender, System.Windows.Forms.PaintEventArgs e)
-        {          
-            Graphics g = e.Graphics;
-            List<Rectangle> ListOfRectangles = new List<Rectangle>();
-            //Thread.Sleep(5000);
-            for (int i = 0; i < players.Count; i++)
-            {
-                ListOfRectangles.Add(new Rectangle(players[i].X, players[i].Y, 10, 10));
-                g.DrawEllipse(System.Drawing.Pens.Red, ListOfRectangles[i]);
-                g.FillEllipse(System.Drawing.Brushes.Blue, ListOfRectangles[i]);
-            }
-        }
 
         private void Form1_FormClosing(Object sender, FormClosingEventArgs e)
         {
             thread.Join();
         }
 
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            List<Rectangle> ListOfRectangles = new List<Rectangle>();
+            //Thread.Sleep(5000);
+            for (int i = 0; i < players.Count; i++)
+            {
+                ListOfRectangles.Add(new Rectangle(players[i].X, players[i].Y, 1000000000, 1000000));
+                g.DrawEllipse(System.Drawing.Pens.Red, ListOfRectangles[i]);
+                g.FillEllipse(System.Drawing.Brushes.Blue, ListOfRectangles[i]);
+            }
+        }
     }
 }
