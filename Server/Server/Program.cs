@@ -17,7 +17,7 @@ namespace Server
                 writer.Write(player.Seq);
                 writer.Write(player.X);
                 writer.Write(player.Y);
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < players.Count; i++)
                 {
                     writer.Write(players[i].X);
                     writer.Write(players[i].Y);
@@ -72,7 +72,7 @@ namespace Server
             return;
 
         }
-        public void sendAll(ref List<Player> players, Socket sock)
+        static public void sendAll(ref List<Player> players, Socket sock)
         {
             for (int i = 0; i < players.Count; i++)
             {
@@ -110,7 +110,7 @@ namespace Server
             while (1 != 2)
             {
                 Recive(sock, ref players);
-                
+                sendAll(ref players,sock);
             }
         }
         // Recive = seq + x + y

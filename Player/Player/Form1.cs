@@ -1,36 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Player
 {
     public partial class Form1 : Form
     {
-        
+        private int seq = 0;
+        private Socket sock = new Socket(
+        AddressFamily.InterNetwork,
+        SocketType.Dgram,
+        ProtocolType.Udp
+        );
+        private List<Players> players = new List<Players>();
         public Form1()
         {
             InitializeComponent();
         }
-        int seq = 0;
-        Socket sock = new Socket(
-    AddressFamily.InterNetwork,
-    SocketType.Dgram,
-    ProtocolType.Udp
-    );
-        private PictureBox pictureBox= new PictureBox();
-        private List<Players> players = new List<Players>();
-        private Font fnt = new Font("Arial", 10);
-        Thread thread;
+
         static void Send(Socket sock, ref int seq, int X, int Y)
         {
             MemoryStream stream = new MemoryStream();
@@ -48,7 +39,7 @@ namespace Player
 
             seq += 1;
         }
-        static void Recive(Socket sock, ref int seq, ref List<Players> players)
+        static void Receive(Socket sock, ref int seq, ref List<Players> players)
         {
             byte[] data = new byte[92];
             EndPoint addr = new IPEndPoint(0, 0);
@@ -70,82 +61,53 @@ namespace Player
                         players[i].Y = reader.ReadInt32();
                     }
                         seq = seq2;
-
                 }
-                
-
             }
-
         }
-        public void Time()
-        {
-
-            
-            while (1 == 1)
-            {
-             /*   
-                Recive(sock,ref seq, ref players);*/
-                this.Invoke((MethodInvoker)delegate {
-                    this.Refresh();
-                });
-             
-                players[0].X += 1;
-                //players[0].X = 500;
-                
-                Thread.Sleep(10);
-                Console.WriteLine("C");
-            }
-
-
-        }
+      
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-
             if (e.KeyCode == Keys.D)
             {
-                players[0].X += 1;
+                players[0].X += 50;
             }
             else if (e.KeyCode == Keys.A)
             {
-                players[0].X -= 1;
+                players[0].X -= 50;
             }
             else if (e.KeyCode == Keys.W)
             {
-                players[0].Y -= 1;
+                players[0].Y -= 50;
             }
             else if (e.KeyCode == Keys.S)
             {
-                players[0].Y += 1;
+                players[0].Y += 50;
             }
-            //Send(sock, ref seq, players[0].X,players[0].Y);
+            Send(sock, ref seq, players[0].X,players[0].Y);
         }
         private void Form1_Load(object sender, EventArgs e)
         {
             players.Add(new Players(10, 10, this.Size.Width, this.Size.Height));
 
             players.Add(new Players(100, 100, this.Size.Width, this.Size.Height));
-           // Send(sock, ref seq, players[0].X, players[0].Y);
-            thread = new Thread(new ThreadStart(Time));
-            thread.Start();
+            Send(sock, ref seq, players[0].X, players[0].Y);
         }
         
-
-        private void Form1_FormClosing(Object sender, FormClosingEventArgs e)
-        {
-            thread.Join();
-        }
-
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            List<Rectangle> ListOfRectangles = new List<Rectangle>();
-            //Thread.Sleep(5000);
             for (int i = 0; i < players.Count; i++)
             {
-                ListOfRectangles.Add(new Rectangle(players[i].X, players[i].Y, 1000000000, 1000000));
-                g.DrawEllipse(System.Drawing.Pens.Red, ListOfRectangles[i]);
-                g.FillEllipse(System.Drawing.Brushes.Blue, ListOfRectangles[i]);
+                var rect = new Rectangle(players[i].X, players[i].Y, 100, 100);
+                g.DrawEllipse(Pens.Red, rect);
+                g.FillEllipse(Brushes.Blue, rect);
             }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            Receive(sock, ref seq, ref players);
+            Refresh();
         }
     }
 }
