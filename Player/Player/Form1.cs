@@ -53,16 +53,19 @@ namespace Player
                 seq2 = reader.ReadInt32();
                 if (seq2 > seq)
                 {
-                    players[0].X = reader.ReadInt32();
-                    players[0].Y = reader.ReadInt32();
-                    
+                    int x = reader.ReadInt32();
+                    players[0].X = Interlocked.Increment(ref x);
+                    int y = reader.ReadInt32();
+                    players[0].Y = Interlocked.Increment(ref y);
+
                     for (int i = 1; i < 10; i++)
                     {
-
-                        players[i].X = reader.ReadInt32();
-                        players[i].Y = reader.ReadInt32();
+                        int j = reader.ReadInt32();
+                        players[i].X = Interlocked.Increment(ref j);
+                        int k = reader.ReadInt32();
+                        players[i].Y = Interlocked.Increment(ref k);
                     }
-                        seq = seq2;
+                        seq = Interlocked.Increment(ref seq2);
                 }
             }
         }
@@ -91,10 +94,21 @@ namespace Player
         {
             while (1 == 1)
             {
+                Socket sock = new Socket(
+        AddressFamily.InterNetwork,
+        SocketType.Dgram,
+        ProtocolType.Udp
+        );
+                int seq = 0;
+                List<Players> players = new List<Players>();
                 this.Invoke((MethodInvoker)delegate
                 {
-                    Receive(sock, ref seq, ref players);
+                    sock = this.sock;
+                    seq = this.seq;
+                    players = this.players;
+                    
                 });
+                Receive(sock, ref seq, ref players);
             }
             
         }
