@@ -12,13 +12,14 @@ namespace Player
     public partial class Form1 : Form
     {
         private int seq = 0;
+        private string PlayerName = "";
         private Socket sock = new Socket(
         AddressFamily.InterNetwork,
         SocketType.Dgram,
         ProtocolType.Udp
         );
         private Thread thread;
-        private List<Players> players = new List<Players>();
+        private Dictionary<string, Player> players = new Dictionary<string, Player>();
         public Form1()
         {
             InitializeComponent();
@@ -36,14 +37,13 @@ namespace Player
             byte[] dataToSend = stream.ToArray();
             IPAddress ip = IPAddress.Parse("127.0.0.1");
             IPEndPoint addr = new IPEndPoint(ip, 1337);
-
             sock.SendTo(dataToSend, addr);
-
-            seq += 1;
+            int seq2 = seq + 1;
+            seq = Interlocked.Increment(ref seq2);
         }
-        void Receive(Socket sock, ref int seq, ref List<Players> players)
+        void Receive(Socket sock, ref int seq, ref Dictionary<string, Player> players)
         {
-            byte[] data = new byte[92];
+            byte[] data = new byte[154];
             EndPoint addr = new IPEndPoint(0, 0);
             sock.ReceiveFrom(data, ref addr);
             MemoryStream stream = new MemoryStream(data);
@@ -51,21 +51,23 @@ namespace Player
             {
                 int seq2;
                 seq2 = reader.ReadInt32();
+                string name = reader.ReadString();
                 if (seq2 > seq)
                 {
-                    int x = reader.ReadInt32();
-                    players[0].X = Interlocked.Increment(ref x);
-                    int y = reader.ReadInt32();
-                    players[0].Y = Interlocked.Increment(ref y);
-
-                    for (int i = 1; i < 10; i++)
+                    if (players.ContainsKey(name))
                     {
-                        int j = reader.ReadInt32();
-                        players[i].X = Interlocked.Increment(ref j);
-                        int k = reader.ReadInt32();
-                        players[i].Y = Interlocked.Increment(ref k);
+                        int x = reader.ReadInt32();
+                        players[name].X = Interlocked.Increment(ref x);
+                        int y = reader.ReadInt32();
+                        players[name].Y = Interlocked.Increment(ref y);
                     }
-                        seq = Interlocked.Increment(ref seq2);
+                    else
+                    {
+                        int x = reader.ReadInt32();
+                        int y = reader.ReadInt32();
+                        players.Add(name, new Player(x, y, this.Size.Width, this.Size.Height));
+                    }
+                    seq = Interlocked.Increment(ref seq2);
                 }
             }
         }
@@ -74,50 +76,41 @@ namespace Player
         {
             if (e.KeyCode == Keys.D)
             {
-                players[0].X += 50;
+                players[PlayerName].X += 10;
             }
             else if (e.KeyCode == Keys.A)
             {
-                players[0].X -= 50;
+                players[PlayerName].X -= 10;
             }
             else if (e.KeyCode == Keys.W)
             {
-                players[0].Y -= 50;
+                players[PlayerName].Y -= 10;
             }
             else if (e.KeyCode == Keys.S)
             {
-                players[0].Y += 50;
+                players[PlayerName].Y += 10;
             }
-            Send(sock, ref seq, players[0].X,players[0].Y);
+            Send(sock, ref seq, players[PlayerName].X,players[PlayerName].Y);
         }
         public void UpdateData()
         {
-            while (1 == 1)
+            while (true)
             {
-                Socket sock = new Socket(
-        AddressFamily.InterNetwork,
-        SocketType.Dgram,
-        ProtocolType.Udp
-        );
-                int seq = 0;
-                List<Players> players = new List<Players>();
+                Dictionary<string, Player> players = new Dictionary<string, Player>();
                 this.Invoke((MethodInvoker)delegate
                 {
-                    sock = this.sock;
-                    seq = this.seq;
+                    
                     players = this.players;
                     
                 });
-                Receive(sock, ref seq, ref players);
+                Receive(this.sock,ref this.seq, ref players);
             }
             
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            players.Add(new Players(10, 10, this.Size.Width, this.Size.Height));
-
-            players.Add(new Players(100, 100, this.Size.Width, this.Size.Height));
-            Send(sock, ref seq, players[0].X, players[0].Y);
+            players.Add("",new Player(10, 10, this.Size.Width, this.Size.Height));
+            Send(sock, ref seq, players[PlayerName].X, players[PlayerName].Y);
             thread = new Thread(new ThreadStart(UpdateData));
             thread.Start();
         }
@@ -125,9 +118,9 @@ namespace Player
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            for (int i = 0; i < players.Count; i++)
+            foreach (KeyValuePair<string, Player> item in players)
             {
-                var rect = new Rectangle(players[i].X, players[i].Y, 100, 100);
+                var rect = new Rectangle(players[item.Key].X, players[item.Key].Y, 10, 10);
                 g.DrawEllipse(Pens.Red, rect);
                 g.FillEllipse(Brushes.Blue, rect);
             }

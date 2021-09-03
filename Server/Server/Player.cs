@@ -9,68 +9,25 @@ namespace Server
 {
     class Player
     {
-        private int xm;
-        private int ym;
-        private int x;
-        public int X
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Seq { get; set; }
+        public EndPoint Addr { get;}
+        public string Name { get; }
+        public static string RandomString(int length)
         {
-            get
-            {
-                return x;
-            }
-            set
-            {
-
-                    x = value;
-                
-
-            }
+            Random random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[random.Next(s.Length)]).ToArray());
         }
-        private int y;
-        public int Y
+        public Player(int X, int Y, EndPoint addr, string name, int Seq = 0 )
         {
-            get
-            {
-                return y;
-            }
-            set
-            {
-
-                    y = value;
-                
-            }
-        }
-        int seq;
-        public int Seq
-        {
-            get
-            {
-                return seq;
-            }
-            set
-            {
-
-                seq = value;
-
-            }
-        }
-        
-        EndPoint addr;
-        public EndPoint Addr
-        {
-            get
-            {
-                return addr;
-            }
-        }
-        public Player(int X, int Y, EndPoint addr, int Seq = 0 )
-        {
-            x = X;
-            y = Y;
-            seq = Seq;
-            this.addr = addr;
-            xm = 500;
-            ym = 300;
+            this.X = X;
+            this.Y = Y;
+            this.Seq = Seq;
+            this.Addr = addr;
+            Name = name;
         }
     }
 }

@@ -1,10 +1,11 @@
 ﻿namespace Player
 {
-    public class Players
+    public class Player
     {
         private int xm;
         private int ym;
         private int x;
+        private string Name { get; }
         public int X
         {
             get
@@ -17,13 +18,13 @@
                 {
                     x = value;
                 }
-                else if(value < xm && value <= 0)
+                else if(value <= 0)
                 {
-                    x -=10;
+                    x +=10;
                 }
-                else if (value >= xm && value > 0)
+                else if (value >= xm)
                 {
-                    x += 10;
+                    x -= 10;
                 }
             }
         }
@@ -40,17 +41,17 @@
                 {
                     y = value;
                 }
-                else if (value < ym && value <= 0)
+                else if (value <= 0)
                 {
                     y += 10;
                 }
-                else if (value >= ym && value > 0)
+                else if (value >= xm)
                 {
                     y -= 10;
                 }
             }
         }
-        public Players(int X, int Y, int XM, int YM)
+        public Player(int X, int Y, int XM, int YM)
         {
             xm = XM;
             ym = YM;
