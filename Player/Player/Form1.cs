@@ -19,6 +19,8 @@ namespace Player
         ProtocolType.Udp
         );
         private Thread thread;
+        object mon = new object();
+
         private Dictionary<string, Player> players = new Dictionary<string, Player>();
         public Form1()
         {
@@ -41,7 +43,7 @@ namespace Player
             int seq2 = seq + 1;
             seq = Interlocked.Increment(ref seq2);
         }
-        void Receive(Socket sock, ref int seq, ref Dictionary<string, Player> players)
+        void Receive(Socket sock, ref int seq, Dictionary<string, Player> players)
         {
             byte[] data = new byte[154];
             EndPoint addr = new IPEndPoint(0, 0);
@@ -54,18 +56,19 @@ namespace Player
                 string name = reader.ReadString();
                 if (seq2 > seq)
                 {
+                    int x = reader.ReadInt32();
+                    int y = reader.ReadInt32();
+                    lock (mon) 
+                    {
                     if (players.ContainsKey(name))
-                    {
-                        int x = reader.ReadInt32();
-                        players[name].X = Interlocked.Increment(ref x);
-                        int y = reader.ReadInt32();
-                        players[name].Y = Interlocked.Increment(ref y);
-                    }
-                    else
-                    {
-                        int x = reader.ReadInt32();
-                        int y = reader.ReadInt32();
-                        players.Add(name, new Player(x, y, this.Size.Width, this.Size.Height));
+                        {
+                            players[name].X = Interlocked.Increment(ref x);
+                            players[name].Y = Interlocked.Increment(ref y);
+                        }
+                        else
+                        {
+                            players.Add(name, new Player(x, y, this.Size.Width, this.Size.Height));
+                        }
                     }
                     seq = Interlocked.Increment(ref seq2);
                 }
@@ -74,36 +77,40 @@ namespace Player
       
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
+            int x; int y;
+            lock (mon)
+            {
+                x = players[PlayerName].X;
+                y = players[PlayerName].Y;
+            }
             if (e.KeyCode == Keys.D)
             {
-                players[PlayerName].X += 10;
+                x += 10;
             }
             else if (e.KeyCode == Keys.A)
             {
-                players[PlayerName].X -= 10;
+                x -= 10;
             }
             else if (e.KeyCode == Keys.W)
             {
-                players[PlayerName].Y -= 10;
+                y -= 10;
             }
             else if (e.KeyCode == Keys.S)
             {
-                players[PlayerName].Y += 10;
+                y += 10;
             }
-            Send(sock, ref seq, players[PlayerName].X,players[PlayerName].Y);
+            lock (mon)
+            {
+                players[PlayerName].X = x;
+                players[PlayerName].Y = y;
+            }
+            Send(sock, ref seq, x, y);
         }
         public void UpdateData()
         {
             while (true)
             {
-                Dictionary<string, Player> players = new Dictionary<string, Player>();
-                this.Invoke((MethodInvoker)delegate
-                {
-                    
-                    players = this.players;
-                    
-                });
-                Receive(this.sock,ref this.seq, ref players);
+                Receive(this.sock,ref this.seq, players);
             }
             
         }

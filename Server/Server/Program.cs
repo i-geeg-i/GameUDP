@@ -71,7 +71,7 @@ namespace Server
         {
             foreach (KeyValuePair<string, Player> item in players)
             {
-                Player pl = players[item.Key];
+                Player pl = item.Value;
                 Send(pl, sock, player);
             }
         }
