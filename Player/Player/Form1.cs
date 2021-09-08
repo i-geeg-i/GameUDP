@@ -20,7 +20,7 @@ namespace Player
         );
         private Thread thread;
         private object mon = new object();
-
+        private volatile bool running = false;
         private Dictionary<string, Player> players = new Dictionary<string, Player>();
         public Form1()
         {
@@ -47,7 +47,12 @@ namespace Player
         {
             byte[] data = new byte[154];
             EndPoint addr = new IPEndPoint(0, 0);
+            sock.ReceiveTimeout = 600;
             sock.ReceiveFrom(data, ref addr);
+            if (data.Length < 0)
+            {
+                return;
+            }
             MemoryStream stream = new MemoryStream(data);
             using (BinaryReader reader = new BinaryReader(stream))
             {
@@ -107,7 +112,7 @@ namespace Player
         }
         public void UpdateData()
         {
-            while (true)
+            while (running)
             {
                 Receive(this.sock,ref this.seq, players);
             }
@@ -139,6 +144,7 @@ namespace Player
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            running = false;
             thread.Join();
         }
     }
