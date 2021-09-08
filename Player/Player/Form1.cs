@@ -19,7 +19,7 @@ namespace Player
         ProtocolType.Udp
         );
         private Thread thread;
-        object mon = new object();
+        private object mon = new object();
 
         private Dictionary<string, Player> players = new Dictionary<string, Player>();
         public Form1()
@@ -82,25 +82,24 @@ namespace Player
             {
                 x = players[PlayerName].X;
                 y = players[PlayerName].Y;
-            }
-            if (e.KeyCode == Keys.D)
-            {
-                x += 10;
-            }
-            else if (e.KeyCode == Keys.A)
-            {
-                x -= 10;
-            }
-            else if (e.KeyCode == Keys.W)
-            {
-                y -= 10;
-            }
-            else if (e.KeyCode == Keys.S)
-            {
-                y += 10;
-            }
-            lock (mon)
-            {
+            
+                if (e.KeyCode == Keys.D)
+                {
+                    x += 10;
+                }
+                else if (e.KeyCode == Keys.A)
+                {
+                    x -= 10;
+                }
+                else if (e.KeyCode == Keys.W)
+                {
+                    y -= 10;
+                }
+                else if (e.KeyCode == Keys.S)
+                {
+                    y += 10;
+                }
+
                 players[PlayerName].X = x;
                 players[PlayerName].Y = y;
             }
