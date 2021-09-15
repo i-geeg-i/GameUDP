@@ -66,10 +66,10 @@ namespace Player
             MemoryStream stream = new MemoryStream(data);
             using (BinaryReader reader = new BinaryReader(stream))
             {
-                int seq2 = reader.ReadInt32();
+                int RecivedSeq = reader.ReadInt32();
                 int us = reader.ReadInt32();
                 string name = reader.ReadString();
-                if (seq2 >= SeqForReciving)
+                if (RecivedSeq >= SeqForReciving)
                 {
                     int x = reader.ReadInt32();
                     int y = reader.ReadInt32();
@@ -98,7 +98,7 @@ namespace Player
                             Console.WriteLine($"{item.Value.X}, {item.Value.Y}");
                         }
                     }
-                        SeqForReciving = Interlocked.Increment(ref seq2);
+                        SeqForReciving = Interlocked.Increment(ref RecivedSeq);
                 }
             }
         }

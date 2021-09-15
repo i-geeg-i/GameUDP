@@ -44,13 +44,14 @@ namespace Server
                         int seq;
                         seq = reader.ReadInt32();
                         recivedPlayer = players[addr];
-                        if (seq >MainSeq)
+                        if (seq >= players[addr].Seq)
                         {
                             recivedPlayer.Seq = seq;
                             recivedPlayer.X = reader.ReadInt32();
                             recivedPlayer.Y = reader.ReadInt32();
                             Console.WriteLine($"Recived from {addr}, X = {recivedPlayer.X}");
                             sendAll(players, sock, recivedPlayer,ref MainSeq);
+                            players[addr].Seq = seq;
                         }
                     }
             }
