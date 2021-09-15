@@ -9,28 +9,33 @@ namespace Server
 {
     class Program
     {
-        static void Send(Player player, Socket sock, Player player1) 
+        static void Send(Player AboutPlayer, Socket sock, Player ToPlayer, ref int MainSeq) 
         {
             MemoryStream stream = new MemoryStream();
+            int us = 0;
+            if (AboutPlayer.Addr == ToPlayer.Addr)
+            {
+                us = 1;
+            }
             using (BinaryWriter writer = new BinaryWriter(stream))
             {
-                writer.Write(player.Seq); // int = 4
-                writer.Write(player.Name); //string Размер строки = 4 + 4 + 4 + 2 + 2 * length = 14 + 2 * length = 14 + 2*64=14+128=142
-                writer.Write(player.X); // int = 4
-                writer.Write(player.Y); // int = 4
-                                        // sum = 4 + 142 + 4 +4 = 154
+                writer.Write(MainSeq); 
+                writer.Write(us);
+                writer.Write(AboutPlayer.Name); 
+                writer.Write(AboutPlayer.X); 
+                writer.Write(AboutPlayer.Y); 
             }
             byte[] dataToSend = stream.ToArray();
-            sock.SendTo(dataToSend, player1.Addr);
-            Console.WriteLine($"Sent to {player1.Addr}, {player.Name.Length}");
-            player1.Seq += 1;
+            sock.SendTo(dataToSend, ToPlayer.Addr);
+            Console.WriteLine($"Sent to {ToPlayer.Addr}, {AboutPlayer.Name.Length}");
+            MainSeq += 1;
         }
-        static void Recive(Socket sock, ref Dictionary<EndPoint, Player> players)
+        static void Recive(Socket sock, ref Dictionary<EndPoint, Player> players, ref int MainSeq)
         {
             byte[] data = new byte[12];
             EndPoint addr = new IPEndPoint(0, 0);
             sock.ReceiveFrom(data, ref addr);
-            Player pl;
+            Player recivedPlayer;
             MemoryStream stream = new MemoryStream(data);
             if (players.ContainsKey(addr))
             {
@@ -38,13 +43,14 @@ namespace Server
                     {
                         int seq;
                         seq = reader.ReadInt32();
-                        if (seq > players[addr].Seq)
+                        recivedPlayer = players[addr];
+                        if (seq >MainSeq)
                         {
-                            players[addr].Seq = seq;
-                            players[addr].X = reader.ReadInt32();
-                            players[addr].Y = reader.ReadInt32();
-                            pl = players[addr];
-                            sendAll(players, sock, pl);
+                            recivedPlayer.Seq = seq;
+                            recivedPlayer.X = reader.ReadInt32();
+                            recivedPlayer.Y = reader.ReadInt32();
+                            Console.WriteLine($"Recived from {addr}, X = {recivedPlayer.X}");
+                            sendAll(players, sock, recivedPlayer,ref MainSeq);
                         }
                     }
             }
@@ -54,23 +60,24 @@ namespace Server
                 using (BinaryReader reader = new BinaryReader(stream2))
                 {
                     int seq;
-                    seq = reader.ReadInt32();
+                    seq = reader.ReadInt32()+1;
                     string name = Player.RandomString(64);
-                    pl = (new Player(reader.ReadInt32(), reader.ReadInt32(), addr, name, seq));
-                    players.Add(addr, pl);
+                    recivedPlayer = (new Player(reader.ReadInt32(), reader.ReadInt32(), addr, name, seq));
+                    players.Add(addr, recivedPlayer);
                 }
-                sendAll(players, sock, pl);
+                Console.WriteLine($"Recived from {addr}");
+                Send(players[addr], sock, players[addr], ref MainSeq);
+                sendAll(players, sock, recivedPlayer, ref MainSeq);
                 
 
             }
-            Console.WriteLine($"Recived from {addr}");
+            
         }
-        static public void sendAll(Dictionary<EndPoint, Player> players, Socket sock, Player player)
+        static public void sendAll(Dictionary<EndPoint, Player> players, Socket sock, Player aboutPlayer,ref int MainSeq)
         {
             foreach (KeyValuePair<EndPoint, Player> item in players)
             {
-                Player pl = item.Value;
-                Send(pl, sock, player);
+                Send(aboutPlayer, sock, item.Value, ref MainSeq);
             }
         }
         static void Main(string[] args)
@@ -81,14 +88,14 @@ namespace Server
                 SocketType.Dgram,
                 ProtocolType.Udp
                 );
-            
+            int MainSeq = 0;
             Dictionary<EndPoint, Player> players = new Dictionary<EndPoint, Player>();
             IPAddress ip = IPAddress.Parse("127.0.0.1");
             IPEndPoint addr = new IPEndPoint(ip, 1337);
             sock.Bind(addr);
             while (1 != 2)
             {
-                Recive(sock, ref players);
+                Recive(sock, ref players, ref MainSeq);
             }
         }
         // Recive = seq + x + y

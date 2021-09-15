@@ -5,7 +5,7 @@
         private int xm;
         private int ym;
         private int x;
-        private string Name { get; }
+        public string Name { get; }
         public int X
         {
             get
@@ -51,12 +51,13 @@
                 }
             }
         }
-        public Player(int X, int Y, int XM, int YM)
+        public Player(int X, int Y, int XM, int YM, string Name)
         {
             xm = XM;
             ym = YM;
             this.X = X;
             this.Y = Y;
+            this.Name = Name;
 
         }
     }

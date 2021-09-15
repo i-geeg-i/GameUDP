@@ -11,7 +11,8 @@ namespace Player
 {
     public partial class Form1 : Form
     {
-        private int seq = 0;
+        private int SeqForReciving = 0;
+        private int SeqForSending = 0;
         private string PlayerName = "";
         private Socket sock = new Socket(
         AddressFamily.InterNetwork,
@@ -21,6 +22,7 @@ namespace Player
         private Thread thread;
         private object mon = new object();
         private volatile bool running = false;
+        private Player we;
         private Dictionary<string, Player> players = new Dictionary<string, Player>();
         public Form1()
         {
@@ -45,10 +47,18 @@ namespace Player
         }
         void Receive(Socket sock, ref int seq, Dictionary<string, Player> players)
         {
-            byte[] data = new byte[154];
+            byte[] data = new byte[81];
             EndPoint addr = new IPEndPoint(0, 0);
-            sock.ReceiveTimeout = 600;
-            sock.ReceiveFrom(data, ref addr);
+            //sock.ReceiveTimeout = 600;
+            /*try
+            {*/
+                sock.ReceiveFrom(data, ref addr);
+            /*}
+            catch
+            {
+                return;
+            }
+            */
             if (data.Length < 0)
             {
                 return;
@@ -56,26 +66,39 @@ namespace Player
             MemoryStream stream = new MemoryStream(data);
             using (BinaryReader reader = new BinaryReader(stream))
             {
-                int seq2;
-                seq2 = reader.ReadInt32();
+                int seq2 = reader.ReadInt32();
+                int us = reader.ReadInt32();
                 string name = reader.ReadString();
-                if (seq2 > seq)
+                if (seq2 >= SeqForReciving)
                 {
                     int x = reader.ReadInt32();
                     int y = reader.ReadInt32();
                     lock (mon) 
                     {
-                    if (players.ContainsKey(name))
+                        if (players.ContainsKey(name))
                         {
                             players[name].X = Interlocked.Increment(ref x);
                             players[name].Y = Interlocked.Increment(ref y);
+                            if (us == 1)
+                            {
+                                we = players[name];
+                            }
                         }
                         else
                         {
-                            players.Add(name, new Player(x, y, this.Size.Width, this.Size.Height));
+                            players.Add(name, new Player(x, y, this.Size.Width, this.Size.Height, name));
+                            if(us == 1)
+                            {
+                                we = players[name];
+                            } 
+                        }
+                        Console.WriteLine($"{players[name].X}, {we.X}");
+                        foreach (KeyValuePair<string, Player> item in players)
+                        {
+                            Console.WriteLine($"{item.Value.X}, {item.Value.Y}");
                         }
                     }
-                    seq = Interlocked.Increment(ref seq2);
+                        SeqForReciving = Interlocked.Increment(ref seq2);
                 }
             }
         }
@@ -85,8 +108,8 @@ namespace Player
             int x; int y;
             lock (mon)
             {
-                x = players[PlayerName].X;
-                y = players[PlayerName].Y;
+                x = we.X;
+                y = we.Y;
             
                 if (e.KeyCode == Keys.D)
                 {
@@ -105,35 +128,42 @@ namespace Player
                     y += 10;
                 }
 
-                players[PlayerName].X = x;
-                players[PlayerName].Y = y;
+                we.X = x;
+                we.Y = y;
+                players[we.Name] = we;
             }
-            Send(sock, ref seq, x, y);
+            Send(sock, ref SeqForSending, x, y);
         }
         public void UpdateData()
         {
             while (running)
             {
-                Receive(this.sock,ref this.seq, players);
+                Receive(this.sock,ref this.SeqForReciving, players);
+                Thread.Sleep(10);
             }
             
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            players.Add("",new Player(10, 10, this.Size.Width, this.Size.Height));
-            Send(sock, ref seq, players[PlayerName].X, players[PlayerName].Y);
+            Random random = new Random();
+            //players.Add("",new Player(10, 10, this.Size.Width, this.Size.Height));
             thread = new Thread(new ThreadStart(UpdateData));
             thread.Start();
+            running = true;
+            Send(sock, ref SeqForSending, random.Next(0, 400), random.Next(0, 300));
         }
         
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            foreach (KeyValuePair<string, Player> item in players)
+            lock (mon)
             {
-                var rect = new Rectangle(players[item.Key].X, players[item.Key].Y, 10, 10);
-                g.DrawEllipse(Pens.Red, rect);
-                g.FillEllipse(Brushes.Blue, rect);
+                foreach (KeyValuePair<string, Player> item in players)
+                {
+                    var rect = new Rectangle(item.Value.X, item.Value.Y, 10, 10);
+                    g.DrawEllipse(Pens.Red, rect);
+                    g.FillEllipse(Brushes.Blue, rect);
+                }
             }
         }
 
@@ -145,7 +175,7 @@ namespace Player
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             running = false;
-            thread.Join();
+            System.Environment.Exit(1);
         }
     }
 }
