@@ -44,7 +44,7 @@ namespace Server
                         int seq;
                         seq = reader.ReadInt32();
                         recivedPlayer = players[addr];
-                        if (seq >= players[addr].Seq)
+                        if (seq >= recivedPlayer.Seq)
                         {
                             recivedPlayer.Seq = seq;
                             recivedPlayer.X = reader.ReadInt32();
